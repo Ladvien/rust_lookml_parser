@@ -3,17 +3,7 @@ version: "0.0.1"
 author: C. Thomas Brittain
 about: LookML to objects.
 args:
-    # - config:
-    #     short: c
-    #     long: config
-    #     value_name: FILE
-    #     help: Sets a custom config file
-    #     takes_value: true
     - file:
         help: Sets the input file to use
         required: true
         index: 1
-    # - verbose:
-    #     short: v
-    #     multiple: true
-    #     help: Sets the level of verbosity
