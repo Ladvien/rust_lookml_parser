@@ -11,7 +11,6 @@ use std::time::Instant;
 use std::env;
 use std::fs;
 
-mod keys;
 mod lexer;
 
 use crate::lexer::Lexer;
