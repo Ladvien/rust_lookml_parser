@@ -1,4 +1,5 @@
 use self::token::Token;
+use self::token::Token::*;
 
 pub mod token;
 pub struct Lexer {
@@ -95,6 +96,19 @@ impl Lexer {
 mod tests {
     use super::*;
 
+    fn parse(mut lexer: Lexer) -> Vec<Token> {
+        let mut tokens: Vec<Token> = Vec::new();
+        loop {
+            let token = lexer.next_token();
+            match token {
+                Token::ILLEGAL(_) => assert!(false),
+                Token::EOF => break,
+                _ => tokens.push(token),
+            }
+        }
+        tokens
+    }
+
     #[test]
     fn whitespace_skipped_catches_spaces() {
         let ch = ' ';
@@ -120,18 +134,22 @@ mod tests {
     }
 
     #[test]
-    fn whitespace_skipped() {
-        let input = r#"dimension: test {
-            
-        "#;
-        let mut lexer = Lexer::new(input.chars().collect());
-        loop {
-            let token = lexer.next_token();
-            match token {
-                Token::ILLEGAL(_) => debug_assert!(false),
-                Token::EOF => break,
-                _ => (),
-            }
+    fn whitespace_skips_whitespaces() {
+        let input = "\tdimension: test\n {";
+        let expected_output = vec![BOF, DIM, COLON(':'), TEST, LCURLY('{')];
+
+        let lexer = Lexer::new(input.chars().collect());
+        let tokens = parse(lexer);
+
+        for i in 0..tokens.len() {
+            assert!(tokens[i] == expected_output[i]);
         }
+    }
+
+    #[test]
+    fn next_token_gets_view_token() {
+        let input = r#"view: test {
+         dimension: {}
+        }"#;
     }
 }
