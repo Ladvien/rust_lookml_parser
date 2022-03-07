@@ -19,7 +19,7 @@ pub fn is_digit(ch: char) -> bool {
 }
 
 pub fn is_whitespace(ch: char) -> bool {
-    ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'
+    ch == ' ' || ch == '\t'
 }
 
 impl Lexer {
@@ -49,6 +49,18 @@ impl Lexer {
         }
     }
 
+    pub fn peek(&mut self, dist: usize) -> char {
+        let mut peek_position = self.position;
+        while peek_position <= self.input_length && is_whitespace(self.input[peek_position]) {
+            peek_position += 1;
+        }
+        self.input[peek_position + dist]
+    }
+
+    pub fn is_ident_lookml_parameter(&mut self, token: &Token) -> bool {
+        token
+    }
+
     pub fn read_identifier(&mut self) -> Vec<char> {
         let start_position = self.position;
         while self.position < self.input_length && is_letter(self.ch) || is_digit(self.ch) {
@@ -63,21 +75,25 @@ impl Lexer {
         match self.ch {
             '~' => tok = token::Token::BOF,
             '^' => tok = token::Token::EOF,
-            '=' => tok = token::Token::EQL(self.ch),
-            '"' => tok = token::Token::DBLQ(self.ch),
-            '@' => tok = token::Token::CONST(self.ch),
-            '$' => tok = token::Token::SYMB(self.ch),
-            '.' => tok = token::Token::DOT(self.ch),
-            ';' => tok = token::Token::SEMI(self.ch),
-            ':' => tok = token::Token::COLON(self.ch),
-            '{' => tok = token::Token::LCURLY(self.ch),
-            '}' => tok = token::Token::RCURLY(self.ch),
-            '[' => tok = token::Token::LBRACK(self.ch),
-            ']' => tok = token::Token::RBRACK(self.ch),
-            ',' => tok = token::Token::COMMA(self.ch),
+            '=' => tok = token::Token::EQL,
+            '#' => tok = token::Token::LKMLCOM,
+            '"' => tok = token::Token::DBLQ,
+            '@' => tok = token::Token::CONST,
+            '$' => tok = token::Token::SYMB,
+            '.' => tok = token::Token::DOT,
+            ';' => tok = token::Token::SEMI,
+            // ':' => tok = token::Token::COLON,
+            '{' => tok = token::Token::LCURLY,
+            '}' => tok = token::Token::RCURLY,
+            '[' => tok = token::Token::LBRACK,
+            ']' => tok = token::Token::RBRACK,
+            ',' => tok = token::Token::COMMA,
+            '\n' => tok = token::Token::NEWL,
+            '\r' => tok = token::Token::NEWL,
             _ => {
                 if is_letter(self.ch) {
                     let ident: Vec<char> = self.read_identifier();
+
                     match token::get_keyword_token(&ident) {
                         Ok(keyword_token) => return keyword_token,
                         Err(_) => return token::Token::IDENT(ident),
@@ -96,6 +112,17 @@ impl Lexer {
 mod tests {
     use super::*;
 
+    #[test]
+    fn peek_gives_next_none_whitespace_char() {
+        let input = "\tdimension: test\n {";
+
+        let mut lexer = Lexer::new(input.chars().collect());
+        lexer = adv_lexer_to(lexer, 2);
+        println!("{}", lexer.ch);
+        // println!("{}", lexer.peek());
+        // assert_eq!(':', lexer.peek());
+    }
+
     fn parse(mut lexer: Lexer) -> Vec<Token> {
         let mut tokens: Vec<Token> = Vec::new();
         loop {
@@ -107,6 +134,19 @@ mod tests {
             }
         }
         tokens
+    }
+
+    fn adv_lexer_to(mut lexer: Lexer, stop_pos: usize) -> Lexer {
+        let mut tokens: Vec<Token> = Vec::new();
+        for _ in 0..stop_pos {
+            let token = lexer.next_token();
+            match token {
+                Token::ILLEGAL(_) => assert!(false),
+                Token::EOF => break,
+                _ => tokens.push(token),
+            }
+        }
+        lexer
     }
 
     #[test]
@@ -136,7 +176,7 @@ mod tests {
     #[test]
     fn whitespace_skips_whitespaces() {
         let input = "\tdimension: test\n {";
-        let expected_output = vec![BOF, DIM, COLON(':'), TEST, LCURLY('{')];
+        let expected_output = vec![BOF, DIM, COLON, TEST, LCURLY];
 
         let lexer = Lexer::new(input.chars().collect());
         let tokens = parse(lexer);
@@ -146,10 +186,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn next_token_gets_view_token() {
-        let input = r#"view: test {
-         dimension: {}
-        }"#;
-    }
+    // #[test]
+    // fn next_token_gets_view_token() {
+    //     let input = r#"view: test {
+    //      dimension: {}
+    //     }"#;
+    // }
 }

@@ -12,7 +12,10 @@ use std::env;
 use std::fs;
 
 mod lexer;
+mod parser;
 
+use crate::lexer::token::Token;
+use crate::lexer::token::Token::*;
 use crate::lexer::Lexer;
 
 fn main() {
@@ -34,14 +37,17 @@ fn main() {
 
     let mut lexer = Lexer::new(potential_lookml.chars().collect());
     let now = Instant::now();
+    let mut tokens: Vec<Token> = Vec::new();
     loop {
         let token = lexer.next_token();
         if token == lexer::token::Token::EOF {
             break;
         } else {
-            println!("{:?}", token)
+            // println!("{:?}", token);
+            tokens.push(token);
         }
     }
+
     let elapsed = now.elapsed();
     println!("Elapsed: {:.2?}", elapsed);
 }

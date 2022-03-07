@@ -1,6 +1,6 @@
 extern crate phf;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Token {
     ILLEGAL(char),
     BOF,
@@ -38,18 +38,20 @@ pub enum Token {
     QUERY,
     EXTNDS,
     AGGTABLE,
-    EQL(char),
-    DBLQ(char),
-    CONST(char),
-    SYMB(char),
-    COLON(char),
-    DOT(char),
-    SEMI(char),
-    LCURLY(char),
-    RCURLY(char),
-    LBRACK(char),
-    RBRACK(char),
-    COMMA(char),
+    EQL,
+    DBLQ,
+    CONST,
+    SYMB,
+    COLON,
+    DOT,
+    SEMI,
+    LCURLY,
+    RCURLY,
+    LBRACK,
+    RBRACK,
+    COMMA,
+    LKMLCOM,
+    NEWL,
     IDENT(Vec<char>),
 }
 
