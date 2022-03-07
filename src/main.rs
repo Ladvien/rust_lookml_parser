@@ -12,7 +12,6 @@ use std::env;
 use std::fs;
 
 mod lexer;
-mod parser;
 
 use crate::lexer::token::Token;
 use crate::lexer::token::Token::*;
@@ -43,7 +42,7 @@ fn main() {
         if token == lexer::token::Token::EOF {
             break;
         } else {
-            // println!("{:?}", token);
+            println!("{:?}", token);
             tokens.push(token);
         }
     }

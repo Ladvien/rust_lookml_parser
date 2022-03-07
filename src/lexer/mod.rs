@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use self::token::Token;
 use self::token::Token::*;
 
@@ -20,6 +22,7 @@ pub fn is_digit(ch: char) -> bool {
 
 pub fn is_whitespace(ch: char) -> bool {
     ch == ' ' || ch == '\t'
+    //  || ch == '\r' || ch == '\n'
 }
 
 impl Lexer {
@@ -33,7 +36,29 @@ impl Lexer {
         }
     }
 
-    pub fn read_char(&mut self) {
+    fn is_lkml_param(&mut self) -> bool {
+        self.peek(1) == ':'
+    }
+
+    fn text2token(&mut self, text: Vec<char>) -> Token {
+        self.skip_whitespace();
+        if self.is_lkml_param() {
+            self.read_char();
+            self.skip_whitespace();
+            let argument = self.read_until('\n');
+            match token::get_lookml_parameter(&text, &argument) {
+                Ok(parameter_token) => return parameter_token,
+                Err(_) => return token::Token::IDENT(text),
+            }
+        } else {
+            match token::get_keyword_token(&text) {
+                Ok(keyword_token) => return keyword_token,
+                Err(_) => return token::Token::IDENT(text),
+            }
+        }
+    }
+
+    fn read_char(&mut self) {
         if self.read_position >= self.input_length {
             self.ch = '^';
         } else {
@@ -43,25 +68,30 @@ impl Lexer {
         self.read_position += 1;
     }
 
-    pub fn skip_whitespace(&mut self) {
+    fn skip_whitespace(&mut self) {
         while self.read_position <= self.input_length && is_whitespace(self.ch) {
             self.read_char()
         }
     }
 
-    pub fn peek(&mut self, dist: usize) -> char {
+    fn peek(&mut self, dist: usize) -> char {
         let mut peek_position = self.position;
         while peek_position <= self.input_length && is_whitespace(self.input[peek_position]) {
             peek_position += 1;
         }
-        self.input[peek_position + dist]
+        self.input[peek_position + dist - 1]
     }
 
-    pub fn is_ident_lookml_parameter(&mut self, token: &Token) -> bool {
-        token
+    fn read_until_occurs(&mut self, ch: char) -> Vec<char> {
+        let start_position = self.position;
+        while self.ch != ch && (self.ch != '\\' && self.peek(1) != '"') {
+            println!("{} -- {}", self.ch, ch);
+            self.read_char();
+        }
+        self.input[start_position..self.position].to_vec()
     }
 
-    pub fn read_identifier(&mut self) -> Vec<char> {
+    fn read_identifier(&mut self) -> Vec<char> {
         let start_position = self.position;
         while self.position < self.input_length && is_letter(self.ch) || is_digit(self.ch) {
             self.read_char()
@@ -77,7 +107,7 @@ impl Lexer {
             '^' => tok = token::Token::EOF,
             '=' => tok = token::Token::EQL,
             '#' => tok = token::Token::LKMLCOM,
-            '"' => tok = token::Token::DBLQ,
+            '"' => tok = token::Token::INCLUDE(self.read_until('\"').into_iter().collect()),
             '@' => tok = token::Token::CONST,
             '$' => tok = token::Token::SYMB,
             '.' => tok = token::Token::DOT,
@@ -92,12 +122,8 @@ impl Lexer {
             '\r' => tok = token::Token::NEWL,
             _ => {
                 if is_letter(self.ch) {
-                    let ident: Vec<char> = self.read_identifier();
-
-                    match token::get_keyword_token(&ident) {
-                        Ok(keyword_token) => return keyword_token,
-                        Err(_) => return token::Token::IDENT(ident),
-                    }
+                    let text: Vec<char> = self.read_identifier();
+                    tok = self.text2token(text);
                 } else {
                     tok = token::Token::ILLEGAL(self.ch);
                 }

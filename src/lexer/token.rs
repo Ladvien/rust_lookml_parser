@@ -5,8 +5,8 @@ pub enum Token {
     ILLEGAL(char),
     BOF,
     EOF,
-    VIEW,
-    INCLUDE,
+    VIEW(String),
+    INCLUDE(String),
     DIM,
     DIMGRP,
     MEAS,
@@ -55,11 +55,12 @@ pub enum Token {
     IDENT(Vec<char>),
 }
 
-pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
-    let identifier: String = ident.into_iter().collect();
-    match &identifier[..] {
-        "view" => Ok(Token::VIEW),
-        "include" => Ok(Token::INCLUDE),
+pub fn get_lookml_parameter(parameter: &Vec<char>, argument: &Vec<char>) -> Result<Token, String> {
+    let parameter: String = parameter.into_iter().collect();
+    let argument: String = argument.into_iter().collect();
+    match &parameter[..] {
+        "view" => Ok(Token::VIEW(argument)),
+        "include" => Ok(Token::INCLUDE(argument)),
         "dimension" => Ok(Token::DIM),
         "dimension_group" => Ok(Token::DIMGRP),
         "measure" => Ok(Token::MEAS),
@@ -91,6 +92,13 @@ pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
         "query" => Ok(Token::QUERY),
         "extends" => Ok(Token::EXTNDS),
         "aggregate_table" => Ok(Token::AGGTABLE),
+        _ => Err(String::from("Not valid token.")),
+    }
+}
+
+pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
+    let identifier: String = ident.into_iter().collect();
+    match &identifier[..] {
         _ => Err(String::from("Not valid token.")),
     }
 }
