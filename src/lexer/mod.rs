@@ -36,6 +36,10 @@ impl Lexer {
         }
     }
 
+    fn is_escaped_string(&mut self) -> bool {
+        return self.ch == '\\' && self.peek(1) == '"';
+    }
+
     fn is_lkml_param(&mut self) -> bool {
         self.peek(1) == ':'
     }
@@ -45,8 +49,10 @@ impl Lexer {
         if self.is_lkml_param() {
             self.read_char();
             self.skip_whitespace();
-            let argument = self.read_until('\n');
-            match token::get_lookml_parameter(&text, &argument) {
+
+            let argument = self.read_argument();
+
+            match token::get_lookml_parameter(&text, argument) {
                 Ok(parameter_token) => return parameter_token,
                 Err(_) => return token::Token::IDENT(text),
             }
@@ -56,16 +62,6 @@ impl Lexer {
                 Err(_) => return token::Token::IDENT(text),
             }
         }
-    }
-
-    fn read_char(&mut self) {
-        if self.read_position >= self.input_length {
-            self.ch = '^';
-        } else {
-            self.ch = self.input[self.read_position]
-        }
-        self.position = self.read_position;
-        self.read_position += 1;
     }
 
     fn skip_whitespace(&mut self) {
@@ -82,10 +78,18 @@ impl Lexer {
         self.input[peek_position + dist - 1]
     }
 
-    fn read_until_occurs(&mut self, ch: char) -> Vec<char> {
+    fn read_until(&mut self, ch: char) -> Vec<char> {
         let start_position = self.position;
-        while self.ch != ch && (self.ch != '\\' && self.peek(1) != '"') {
-            println!("{} -- {}", self.ch, ch);
+        while self.ch != ch && !self.is_escaped_string() {
+            self.skip_whitespace();
+            self.read_char();
+        }
+        self.input[start_position..self.position].to_vec()
+    }
+
+    fn read_until_any(&mut self, chs: Vec<char>) -> Vec<char> {
+        let start_position = self.position;
+        while !chs.contains(&self.ch) && !self.is_escaped_string() {
             self.read_char();
         }
         self.input[start_position..self.position].to_vec()
@@ -99,6 +103,25 @@ impl Lexer {
         self.input[start_position..self.position].to_vec()
     }
 
+    fn read_argument(&mut self) -> Vec<char> {
+        if self.ch == '\"' {
+            self.read_char();
+            return self.read_until('\"');
+        } else {
+            return self.read_until_any(vec![' ', '{']);
+        }
+    }
+
+    fn read_char(&mut self) {
+        if self.read_position >= self.input_length {
+            self.ch = '^';
+        } else {
+            self.ch = self.input[self.read_position]
+        }
+        self.position = self.read_position;
+        self.read_position += 1;
+    }
+
     pub fn next_token(&mut self) -> Token {
         let tok: Token;
         self.skip_whitespace();
@@ -107,9 +130,7 @@ impl Lexer {
             '^' => tok = token::Token::EOF,
             '=' => tok = token::Token::EQL,
             '#' => tok = token::Token::LKMLCOM,
-            '"' => tok = token::Token::INCLUDE(self.read_until('\"').into_iter().collect()),
-            '@' => tok = token::Token::CONST,
-            '$' => tok = token::Token::SYMB,
+            '"' => tok = token::Token::INCLUDE(self.read_until('\"')),
             '.' => tok = token::Token::DOT,
             ';' => tok = token::Token::SEMI,
             // ':' => tok = token::Token::COLON,
