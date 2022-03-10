@@ -16,7 +16,7 @@ pub enum Token {
     LKMLCOM,
     NEWL,
     VIEW(Vec<char>),
-    INCLUDE(Vec<char>),
+    // INCLUDE(Vec<char>),
     DIM(Vec<char>),
     DIMGRP(Vec<char>),
     MEAS(Vec<char>),
@@ -57,7 +57,7 @@ pub fn get_lookml_parameter(parameter: &Vec<char>, argument: Vec<char>) -> Resul
     let parameter: String = parameter.into_iter().collect();
     match &parameter[..] {
         "view" => Ok(Token::VIEW(argument)),
-        "include" => Ok(Token::INCLUDE(argument)),
+        // "include" => Ok(Token::INCLUDE(argument)),
         "dimension" => Ok(Token::DIM(argument)),
         "dimension_group" => Ok(Token::DIMGRP(argument)),
         "measure" => Ok(Token::MEAS(argument)),

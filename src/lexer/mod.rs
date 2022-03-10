@@ -3,12 +3,15 @@ use std::process::exit;
 use self::token::Token;
 use self::token::Token::*;
 
+use crate::lkml_objects::*;
+
 pub mod token;
 pub struct Lexer {
-    input: Vec<char>,
     pub position: usize,
     pub read_position: usize,
     pub ch: char,
+    pub file: LKMLFile,
+    input: Vec<char>,
     input_length: usize,
 }
 
@@ -33,6 +36,7 @@ impl Lexer {
             read_position: 0,
             ch: '~',
             input_length: input.len(),
+            file: LKMLFile::new(),
         }
     }
 
@@ -130,7 +134,7 @@ impl Lexer {
             '^' => tok = token::Token::EOF,
             '=' => tok = token::Token::EQL,
             '#' => tok = token::Token::LKMLCOM,
-            '"' => tok = token::Token::INCLUDE(self.read_until('\"')),
+            // '"' => {
             '.' => tok = token::Token::DOT,
             ';' => tok = token::Token::SEMI,
             // ':' => tok = token::Token::COLON,
@@ -145,6 +149,10 @@ impl Lexer {
                 if is_letter(self.ch) {
                     let text: Vec<char> = self.read_identifier();
                     tok = self.text2token(text);
+                    // println!("here");
+                    // let obj = self.read_until('\"').into_iter().collect::<String>();
+                    // self.file.includes.push(Include { path: obj });
+                    // return token::Token::ILLEGAL('I');
                 } else {
                     tok = token::Token::ILLEGAL(self.ch);
                 }
