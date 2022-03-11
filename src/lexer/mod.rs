@@ -13,6 +13,7 @@ pub struct Lexer {
     pub file: LKMLFile,
     input: Vec<char>,
     input_length: usize,
+    active_nodes: Vec<Token>,
 }
 
 pub fn is_letter(ch: char) -> bool {
@@ -34,9 +35,11 @@ impl Lexer {
             input: input.clone(),
             position: 0,
             read_position: 0,
+            // TODO: fix start char
             ch: '~',
             input_length: input.len(),
             file: LKMLFile::new(),
+            active_nodes: Vec::new(),
         }
     }
 
@@ -56,7 +59,7 @@ impl Lexer {
 
             let argument = self.read_argument();
 
-            match token::get_lookml_parameter(&text, argument) {
+            match self.get_lookml_parameter(&text, argument) {
                 Ok(parameter_token) => return parameter_token,
                 Err(_) => return token::Token::IDENT(text),
             }
@@ -149,17 +152,91 @@ impl Lexer {
                 if is_letter(self.ch) {
                     let text: Vec<char> = self.read_identifier();
                     tok = self.text2token(text);
-                    // println!("here");
-                    // let obj = self.read_until('\"').into_iter().collect::<String>();
-                    // self.file.includes.push(Include { path: obj });
-                    // return token::Token::ILLEGAL('I');
                 } else {
-                    tok = token::Token::ILLEGAL(self.ch);
+                    tok = token::Token::ILLEGAL(format!(
+                        "Error parsing LookML at character '{}'.",
+                        self.ch
+                    ));
                 }
             }
         }
         self.read_char();
         tok
+    }
+
+    pub fn get_lookml_parameter(
+        &mut self,
+        parameter: &Vec<char>,
+        argument: Vec<char>,
+    ) -> Result<Token, String> {
+        let parameter: String = parameter.into_iter().collect();
+        match &parameter[..] {
+            "view" => {
+                let view = View {
+                    name: argument.into_iter().collect(),
+                    measures: Vec::new(),
+                    dimensions: Vec::new(),
+                    dimension_groups: Vec::new(),
+                };
+                self.file.views.push(view.clone());
+                return Ok(Token::VIEW(view));
+            }
+            "include" => {
+                let include = Include {
+                    path: argument.into_iter().collect(),
+                };
+                self.file.includes.push(include.clone());
+                return Ok(Token::INCLUDE(include));
+            }
+            // "dimension" => {}
+            "dimension_group" => {
+                let dimension_group = DimensionGroup {
+                    name: argument.into_iter().collect(),
+                    sql: "".to_owned(),
+                };
+                match self.active_nodes.last_mut() {
+                    Some(node) => match node {
+                        VIEW(view) => {
+                            view.dimension_groups.push(dimension_group.clone());
+                            Ok(Token::DIMGRP(dimension_group))
+                        }
+                        _ => Err("Found dimension_group outside of view.".to_string()),
+                    },
+                    None => todo!(),
+                }
+            }
+            "measure" => Ok(Token::MEAS(argument)),
+            "filter" => Ok(Token::FILT(argument)),
+            "filters" => Ok(Token::FILTS(argument)),
+            "access_filter" => Ok(Token::ACCFILT(argument)),
+            "bind_filters" => Ok(Token::BFILTS(argument)),
+            "map_layer" => Ok(Token::MLAYER(argument)),
+            "parameter" => Ok(Token::PARAMTR(argument)),
+            "set" => Ok(Token::SET(argument)),
+            "column" => Ok(Token::COLUMN(argument)),
+            "derived_column" => Ok(Token::DERIVCOL(argument)),
+            "explore" => Ok(Token::EXPLORE(argument)),
+            "link" => Ok(Token::LINK(argument)),
+            "when" => Ok(Token::WHEN(argument)),
+            "allowed_value" => Ok(Token::ALLWVAL(argument)),
+            "named_value_format" => Ok(Token::NAMEVALFRMT(argument)),
+            "join" => Ok(Token::JOIN(argument)),
+            "datagroup" => Ok(Token::DATGRP(argument)),
+            "access_grant" => Ok(Token::ACCGRNT(argument)),
+            "sql_step" => Ok(Token::SQLSTEP(argument)),
+            "action" => Ok(Token::ACTION(argument)),
+            "param" => Ok(Token::PARAM(argument)),
+            "form_param" => Ok(Token::FPARAM(argument)),
+            "option" => Ok(Token::OPTION(argument)),
+            "user_attribute_param" => Ok(Token::USRATTRPARAM(argument)),
+            "assert" => Ok(Token::ASSERT(argument)),
+            "test" => Ok(Token::TEST(argument)),
+            "query" => Ok(Token::QUERY(argument)),
+            "extends" => Ok(Token::EXTNDS(argument)),
+            "aggregate_table" => Ok(Token::AGGTABLE(argument)),
+            "constant" => Ok(Token::CONST(argument)),
+            _ => Err(String::from("Not valid token.")),
+        }
     }
 }
 

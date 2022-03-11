@@ -1,8 +1,10 @@
+use crate::lkml_objects::{Dimension, DimensionGroup, Include, LKMLFile, View};
+
 extern crate phf;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Token {
-    ILLEGAL(char),
+    ILLEGAL(String),
     BOF,
     EOF,
     EQL,
@@ -15,10 +17,10 @@ pub enum Token {
     COMMA,
     LKMLCOM,
     NEWL,
-    VIEW(Vec<char>),
-    // INCLUDE(Vec<char>),
-    DIM(Vec<char>),
-    DIMGRP(Vec<char>),
+    VIEW(View),
+    INCLUDE(Include),
+    DIM(Dimension),
+    DIMGRP(DimensionGroup),
     MEAS(Vec<char>),
     FILT(Vec<char>),
     FILTS(Vec<char>),
@@ -51,47 +53,6 @@ pub enum Token {
     CONST(Vec<char>),
     SYMB(Vec<char>),
     IDENT(Vec<char>),
-}
-
-pub fn get_lookml_parameter(parameter: &Vec<char>, argument: Vec<char>) -> Result<Token, String> {
-    let parameter: String = parameter.into_iter().collect();
-    match &parameter[..] {
-        "view" => Ok(Token::VIEW(argument)),
-        // "include" => Ok(Token::INCLUDE(argument)),
-        "dimension" => Ok(Token::DIM(argument)),
-        "dimension_group" => Ok(Token::DIMGRP(argument)),
-        "measure" => Ok(Token::MEAS(argument)),
-        "filter" => Ok(Token::FILT(argument)),
-        "filters" => Ok(Token::FILTS(argument)),
-        "access_filter" => Ok(Token::ACCFILT(argument)),
-        "bind_filters" => Ok(Token::BFILTS(argument)),
-        "map_layer" => Ok(Token::MLAYER(argument)),
-        "parameter" => Ok(Token::PARAMTR(argument)),
-        "set" => Ok(Token::SET(argument)),
-        "column" => Ok(Token::COLUMN(argument)),
-        "derived_column" => Ok(Token::DERIVCOL(argument)),
-        "explore" => Ok(Token::EXPLORE(argument)),
-        "link" => Ok(Token::LINK(argument)),
-        "when" => Ok(Token::WHEN(argument)),
-        "allowed_value" => Ok(Token::ALLWVAL(argument)),
-        "named_value_format" => Ok(Token::NAMEVALFRMT(argument)),
-        "join" => Ok(Token::JOIN(argument)),
-        "datagroup" => Ok(Token::DATGRP(argument)),
-        "access_grant" => Ok(Token::ACCGRNT(argument)),
-        "sql_step" => Ok(Token::SQLSTEP(argument)),
-        "action" => Ok(Token::ACTION(argument)),
-        "param" => Ok(Token::PARAM(argument)),
-        "form_param" => Ok(Token::FPARAM(argument)),
-        "option" => Ok(Token::OPTION(argument)),
-        "user_attribute_param" => Ok(Token::USRATTRPARAM(argument)),
-        "assert" => Ok(Token::ASSERT(argument)),
-        "test" => Ok(Token::TEST(argument)),
-        "query" => Ok(Token::QUERY(argument)),
-        "extends" => Ok(Token::EXTNDS(argument)),
-        "aggregate_table" => Ok(Token::AGGTABLE(argument)),
-        "constant" => Ok(Token::CONST(argument)),
-        _ => Err(String::from("Not valid token.")),
-    }
 }
 
 pub fn get_keyword_token(ident: &Vec<char>) -> Result<Token, String> {
